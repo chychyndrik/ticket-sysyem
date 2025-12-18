@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # Frontend сервис (статический сайт)
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    networks:
+      - app-network
+
+  # Order Service
+  order-service:
+    build: ./order-service
+    ports:
+      - "5001:5000"
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - DATABASE_URL=sqlite:///orders.db
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # Payment Service
+  payment-service:
+    build: ./payment-service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # Notification Service
+  notification-service:
+    build: ./notification-service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

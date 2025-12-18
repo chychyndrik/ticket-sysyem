@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чеки - Ticket System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/themes.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="navbar">
+                <a href="index.html" class="logo">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>TicketSystem</span>
+                </a>
+                
+                <button class="menu-toggle" aria-label="Меню">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <ul class="nav-menu">
+                    <li><a href="index.html">Реестр билетов</a></li>
+                    <li><a href="payment.html">Оплата</a></li>
+                    <li><a href="receipt.html" class="active">Чеки</a></li>
+                </ul>
+                
+                <div class="theme-switcher">
+                    <button class="theme-toggle" aria-label="Переключить тему">
+                        <i class="fas fa-moon"></i>
+                        <i class="fas fa-sun"></i>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="receipts-page">
+                <h1 class="page-title">История чеков</h1>
+                <p class="page-subtitle">Все ваши покупки и история транзакций</p>
+
+                <div class="receipts-filters">
+                    <div class="filter-group">
+                        <label for="date-filter">Период:</label>
+                        <select id="date-filter" class="filter-select">
+                            <option value="all">За все время</option>
+                            <option value="month">За месяц</option>
+                            <option value="week">За неделю</option>
+                            <option value="today">Сегодня</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="status-filter">Статус:</label>
+                        <select id="status-filter" class="filter-select">
+                            <option value="all">Все статусы</option>
+                            <option value="completed">Завершённые</option>
+                            <option value="pending">В обработке</option>
+                            <option value="cancelled">Отменённые</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary" id="refresh-receipts">
+                        <i class="fas fa-sync-alt"></i> Обновить
+                    </button>
+                </div>
+
+                <div class="receipts-container" id="receipts-container">
+                    <!-- Чеки будут загружены через JavaScript -->
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Загрузка чеков...</p>
+                    </div>
+                </div>
+
+                <div class="receipt-actions">
+                    <button class="btn btn-secondary" id="export-receipts">
+                        <i class="fas fa-file-export"></i> Экспорт в PDF
+                    </button>
+                    <button class="btn btn-primary" id="print-all">
+                        <i class="fas fa-print"></i> Распечатать все
+                    </button>
+                </div>
+
+                <div class="receipt-details" id="receipt-details" style="display: none;">
+                    <div class="receipt-details-header">
+                        <h3>Детали чека</h3>
+                        <button class="btn-close" id="close-details">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="receipt-details-content">
+                        <div class="receipt-print" id="printable-receipt">
+                            <div class="receipt-header">
+                                <h2>Талон на мероприятие</h2>
+                                <div class="receipt-qr" id="receipt-qr">
+                                    <!-- QR код будет сгенерирован -->
+                                </div>
+                            </div>
+                            
+                            <div class="receipt-info">
+                                <div class="info-row">
+                                    <span>Номер заказа:</span>
+                                    <strong id="detail-order-id">-</strong>
+                                </div>
+                                <div class="info-row">
+                                    <span>Дата и время:</span>
+                                    <span id="detail-date">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <span>Статус:</span>
+                                    <span class="status-badge" id="detail-status">-</span>
+                                </div>
+                            </div>
+
+                            <div class="receipt-items">
+                                <h4>Купленные билеты:</h4>
+                                <div class="items-list" id="detail-items">
+                                    <!-- Список билетов -->
+                                </div>
+                            </div>
+
+                            <div class="receipt-total">
+                                <div class="total-row">
+                                    <span>Сумма:</span>
+                                    <span id="detail-amount">0 руб.</span>
+                                </div>
+                                <div class="total-row">
+                                    <span>Комиссия:</span>
+                                    <span id="detail-fee">0 руб.</span>
+                                </div>
+                                <div class="total-row grand-total">
+                                    <span>Итого:</span>
+                                    <span id="detail-total">0 руб.</span>
+                                </div>
+                            </div>
+
+                            <div class="receipt-footer">
+                                <p><strong>Важная информация:</strong></p>
+                                <ul>
+                                    <li>Приходите на мероприятие за 30 минут до начала</li>
+                                    <li>Иметь при себе документ, удостоверяющий личность</li>
+                                    <li>Билеты возврату и обмену не подлежат</li>
+                                    <li>В случае вопросов обращайтесь по телефону: +7 (999) 123-45-67</li>
+                                </ul>
+                                <p class="thank-you">Спасибо за покупку! Приятного мероприятия!</p>
+                            </div>
+                        </div>
+
+                        <div class="receipt-actions-detail">
+                            <button class="btn btn-secondary" id="print-receipt">
+                                <i class="fas fa-print"></i> Распечатать чек
+                            </button>
+                            <button class="btn btn-primary" id="download-receipt">
+                                <i class="fas fa-download"></i> Скачать PDF
+                            </button>
+                            <button class="btn btn-outline" id="send-receipt">
+                                <i class="fas fa-paper-plane"></i> Отправить на email
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>TicketSystem</h3>
+                    <p>Система онлайн-продажи билетов на мероприятия с использованием микросервисной архитектуры.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="index.html">Реестр билетов</a></li>
+                        <li><a href="payment.html">Оплата</a></li>
+                        <li><a href="receipt.html">Чеки</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Технологии</h4>
+                    <ul>
+                        <li>Flask микросервисы</li>
+                        <li>RabbitMQ для очередей</li>
+                        <li>SQLite база данных</li>
+                        <li>Docker контейнеризация</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 TicketSystem. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/receipts.js"></script>
+</body>
+</html>

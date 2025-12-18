@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реестр билетов - Ticket System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/themes.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="navbar">
+                <a href="index.html" class="logo">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>TicketSystem</span>
+                </a>
+                
+                <button class="menu-toggle" aria-label="Меню">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <ul class="nav-menu">
+                    <li><a href="index.html" class="active">Реестр билетов</a></li>
+                    <li><a href="payment.html">Оплата</a></li>
+                    <li><a href="receipt.html">Чеки</a></li>
+                </ul>
+                
+                <div class="theme-switcher">
+                    <button class="theme-toggle" aria-label="Переключить тему">
+                        <i class="fas fa-moon"></i>
+                        <i class="fas fa-sun"></i>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1 class="hero-title">Система продажи билетов</h1>
+                    <p class="hero-subtitle">Покупка и управление билетами на мероприятия</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="tickets-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Доступные билеты</h2>
+                    <div class="filter-controls">
+                        <select id="category-filter" class="filter-select">
+                            <option value="all">Все категории</option>
+                            <option value="concert">Концерты</option>
+                            <option value="theater">Театр</option>
+                            <option value="sport">Спорт</option>
+                            <option value="cinema">Кино</option>
+                        </select>
+                        <input type="text" id="search-tickets" class="search-input" placeholder="Поиск билетов...">
+                    </div>
+                </div>
+
+                <div class="tickets-container" id="tickets-container">
+                    <!-- Билеты будут загружены через JavaScript -->
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Загрузка билетов...</p>
+                    </div>
+                </div>
+
+                <div class="cart-summary">
+                    <div class="cart-info">
+                        <h3>Корзина</h3>
+                        <div class="cart-items" id="cart-items">
+                            <p class="empty-cart">Корзина пуста</p>
+                        </div>
+                        <div class="cart-total">
+                            <span>Итого:</span>
+                            <span id="cart-total">0 руб.</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="checkout-btn" disabled>
+                        <i class="fas fa-shopping-cart"></i>
+                        Перейти к оплате (<span id="cart-count">0</span>)
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>TicketSystem</h3>
+                    <p>Система онлайн-продажи билетов на мероприятия с использованием микросервисной архитектуры.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="index.html">Реестр билетов</a></li>
+                        <li><a href="payment.html">Оплата</a></li>
+                        <li><a href="receipt.html">Чеки</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Технологии</h4>
+                    <ul>
+                        <li>Flask микросервисы</li>
+                        <li>RabbitMQ для очередей</li>
+                        <li>SQLite база данных</li>
+                        <li>Docker контейнеризация</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 TicketSystem. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/tickets.js"></script>
+</body>
+</html>

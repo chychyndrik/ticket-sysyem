@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата - Ticket System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/themes.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="navbar">
+                <a href="index.html" class="logo">
+                    <i class="fas fa-ticket-alt"></i>
+                    <span>TicketSystem</span>
+                </a>
+                
+                <button class="menu-toggle" aria-label="Меню">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
+                <ul class="nav-menu">
+                    <li><a href="index.html">Реестр билетов</a></li>
+                    <li><a href="payment.html" class="active">Оплата</a></li>
+                    <li><a href="receipt.html">Чеки</a></li>
+                </ul>
+                
+                <div class="theme-switcher">
+                    <button class="theme-toggle" aria-label="Переключить тему">
+                        <i class="fas fa-moon"></i>
+                        <i class="fas fa-sun"></i>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="payment-process">
+                <div class="payment-steps">
+                    <div class="step active">
+                        <div class="step-number">1</div>
+                        <div class="step-label">Корзина</div>
+                    </div>
+                    <div class="step active">
+                        <div class="step-number">2</div>
+                        <div class="step-label">Оплата</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-label">Подтверждение</div>
+                    </div>
+                </div>
+
+                <h1 class="page-title">Оплата заказа</h1>
+
+                <div class="payment-container">
+                    <div class="order-summary">
+                        <h3>Детали заказа</h3>
+                        <div class="summary-items" id="order-items">
+                            <!-- Товары будут загружены из корзины -->
+                        </div>
+                        <div class="summary-total">
+                            <div class="total-row">
+                                <span>Сумма:</span>
+                                <span id="order-amount">0 руб.</span>
+                            </div>
+                            <div class="total-row">
+                                <span>Комиссия:</span>
+                                <span id="order-fee">0 руб.</span>
+                            </div>
+                            <div class="total-row grand-total">
+                                <span>К оплате:</span>
+                                <span id="order-total">0 руб.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="payment-methods">
+                        <h3>Способ оплаты</h3>
+                        
+                        <form id="payment-form" class="payment-form">
+                            <div class="form-group">
+                                <label for="payment-method">Выберите способ оплаты:</label>
+                                <select id="payment-method" name="payment-method" class="form-select" required>
+                                    <option value="">Выберите способ...</option>
+                                    <option value="card">Банковская карта</option>
+                                    <option value="apple-pay">Apple Pay</option>
+                                    <option value="google-pay">Google Pay</option>
+                                    <option value="qiwi">QIWI Кошелек</option>
+                                    <option value="yoomoney">ЮMoney</option>
+                                </select>
+                            </div>
+
+                            <div id="card-details" class="payment-details" style="display: none;">
+                                <div class="form-group">
+                                    <label for="card-number">Номер карты</label>
+                                    <input type="text" id="card-number" name="card-number" 
+                                           placeholder="1234 5678 9012 3456" maxlength="19">
+                                    <div class="card-icons">
+                                        <i class="fab fa-cc-visa"></i>
+                                        <i class="fab fa-cc-mastercard"></i>
+                                        <i class="fab fa-cc-mir"></i>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="card-expiry">Срок действия</label>
+                                        <input type="text" id="card-expiry" name="card-expiry" 
+                                               placeholder="MM/YY" maxlength="5">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="card-cvv">CVV</label>
+                                        <input type="password" id="card-cvv" name="card-cvv" 
+                                               placeholder="123" maxlength="3">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="card-holder">Имя держателя карты</label>
+                                    <input type="text" id="card-holder" name="card-holder" 
+                                           placeholder="IVAN IVANOV">
+                                </div>
+                            </div>
+
+                            <div id="email-field" class="form-group" style="display: none;">
+                                <label for="user-email">Email для отправки чека</label>
+                                <input type="email" id="user-email" name="user-email" 
+                                       placeholder="your@email.com">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="save-card" name="save-card">
+                                    <span>Сохранить карту для будущих покупок</span>
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="terms" name="terms" required>
+                                    <span>Я согласен с <a href="#">условиями использования</a> и <a href="#">политикой конфиденциальности</a></span>
+                                </label>
+                                <div class="form-error" id="terms-error"></div>
+                            </div>
+
+                            <div class="payment-buttons">
+                                <button type="button" class="btn btn-secondary" onclick="window.location.href='index.html'">
+                                    <i class="fas fa-arrow-left"></i> Вернуться к билетам
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="pay-btn">
+                                    <i class="fas fa-lock"></i> Оплатить <span id="pay-amount">0 руб.</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="payment-info">
+                    <h4><i class="fas fa-shield-alt"></i> Безопасность платежей</h4>
+                    <p>Все платежи защищены 256-битным SSL-шифрованием. Данные вашей карты никогда не сохраняются на наших серверах.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>TicketSystem</h3>
+                    <p>Система онлайн-продажи билетов на мероприятия с использованием микросервисной архитектуры.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Навигация</h4>
+                    <ul>
+                        <li><a href="index.html">Реестр билетов</a></li>
+                        <li><a href="payment.html">Оплата</a></li>
+                        <li><a href="receipt.html">Чеки</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Поддержка</h4>
+                    <ul>
+                        <li><i class="fas fa-phone"></i> +7 (999) 123-45-67</li>
+                        <li><i class="fas fa-envelope"></i> support@ticketsystem.ru</li>
+                        <li><i class="fas fa-clock"></i> 24/7</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 TicketSystem. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/payment.js"></script>
+</body>
+</html>
