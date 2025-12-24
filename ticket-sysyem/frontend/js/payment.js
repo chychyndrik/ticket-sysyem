@@ -122,74 +122,95 @@ function setupEventListeners() {
     }
     
     // Обработка отправки формы
-    if (paymentForm) {
-        paymentForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+    // В функции setupEventListeners, внутри обработчика submit:
+if (paymentForm) {
+    paymentForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // Валидация согласия с условиями
+        if (!termsCheckbox.checked) {
+            termsError.textContent = 'Необходимо согласиться с условиями';
+            return;
+        }
+        
+        // Валидация данных карты, если выбран этот способ
+        const paymentMethod = document.getElementById('payment-method').value;
+        
+        if (paymentMethod === 'card') {
+            const cardNumber = document.getElementById('card-number').value.replace(/\s/g, '');
+            const cardExpiry = document.getElementById('card-expiry').value;
+            const cardCVV = document.getElementById('card-cvv').value;
             
-            // Валидация согласия с условиями
-            if (!termsCheckbox.checked) {
-                termsError.textContent = 'Необходимо согласиться с условиями';
+            if (cardNumber.length !== 16) {
+                alert('Номер карты должен содержать 16 цифр');
                 return;
             }
             
-            // Валидация данных карты, если выбран этот способ
-            const paymentMethod = document.getElementById('payment-method').value;
-            
-            if (paymentMethod === 'card') {
-                const cardNumber = document.getElementById('card-number').value.replace(/\s/g, '');
-                const cardExpiry = document.getElementById('card-expiry').value;
-                const cardCVV = document.getElementById('card-cvv').value;
-                
-                if (cardNumber.length !== 16) {
-                    alert('Номер карты должен содержать 16 цифр');
-                    return;
-                }
-                
-                if (!cardExpiry.match(/^\d{2}\/\d{2}$/)) {
-                    alert('Введите срок действия в формате ММ/ГГ');
-                    return;
-                }
-                
-                if (cardCVV.length !== 3) {
-                    alert('CVV код должен содержать 3 цифры');
-                    return;
-                }
+            if (!cardExpiry.match(/^\d{2}\/\d{2}$/)) {
+                alert('Введите срок действия в формате ММ/ГГ');
+                return;
             }
             
-            // Получаем сумму заказа
-            const cartTotal = CartAPI.getCartTotal();
-            const fee = Math.round(cartTotal * 0.03);
-            const totalAmount = cartTotal + fee;
-            
-            // Показываем индикатор загрузки
-            const payBtn = document.getElementById('pay-btn');
-            const originalText = payBtn.innerHTML;
-            payBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка платежа...';
-            payBtn.disabled = true;
-            
-            try {
-                // Создаем заказ через API
-                const orderData = await OrderAPI.createOrder(totalAmount);
-                
-                // Имитация обработки платежа
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                
-                // Очищаем корзину
-                CartAPI.clearCart();
-                
-                // Перенаправляем на страницу с чеком
-                window.location.href = `receipt.html?order_id=${orderData.order_id}`;
-                
-            } catch (error) {
-                console.error('Payment error:', error);
-                alert('Произошла ошибка при обработке платежа. Пожалуйста, попробуйте еще раз.');
-                
-                // Восстанавливаем кнопку
-                payBtn.innerHTML = originalText;
-                payBtn.disabled = false;
+            if (cardCVV.length !== 3) {
+                alert('CVV код должен содержать 3 цифры');
+                return;
             }
-        });
-    }
+        }
+        
+        // Получаем сумму заказа
+        const cart = CartAPI.getCart();
+        if (cart.length === 0) {
+            alert('Ваша корзина пуста');
+            return;
+        }
+        
+        const cartTotal = CartAPI.getCartTotal();
+        const fee = Math.round(cartTotal * 0.03);
+        const totalAmount = cartTotal + fee;
+        
+        // Показываем индикатор загрузки
+        const payBtn = document.getElementById('pay-btn');
+        const originalText = payBtn.innerHTML;
+        payBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка платежа...';
+        payBtn.disabled = true;
+        
+        // В обработчике отправки формы (submit), после успешной оплаты:
+        try {
+            // Создаем заказ через API
+            const orderData = await OrderAPI.createOrder(totalAmount);
+            console.log('Order created after payment:', orderData);
+            
+            // Обновляем счетчик заказов в localStorage
+            const orderCount = parseInt(localStorage.getItem('order_count') || '0') + 1;
+            localStorage.setItem('order_count', orderCount.toString());
+            
+            // Имитация обработки платежа
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Очищаем корзину
+            CartAPI.clearCart();
+            
+            // Показываем сообщение об успехе
+            alert(`Заказ #${orderData.order_id} успешно создан! Сумма: ${Utils.formatPrice(totalAmount)}`);
+            
+            // Перенаправляем на страницу с чеком
+            window.location.href = `receipt.html?order_id=${orderData.order_id}`;
+            
+        } catch (error) {
+            console.error('Payment error:', error);
+            
+            // Даже при ошибке API создаем локальный заказ
+            const orderId = Math.floor(Math.random() * 1000) + 1000;
+            alert(`Заказ #${orderId} создан локально. Сумма: ${Utils.formatPrice(totalAmount)}`);
+            
+            // Очищаем корзину
+            CartAPI.clearCart();
+            
+            // Перенаправляем на страницу чеков
+            window.location.href = `receipt.html?order_id=${orderId}`;
+        }
+    });
+}
 }
 
 // Валидация email

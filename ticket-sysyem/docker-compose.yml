@@ -1,15 +1,16 @@
 version: '3.8'
 
 services:
-  # Frontend сервис (статический сайт)
+  # Фронтенд через nginx
   frontend:
     image: nginx:alpine
     ports:
       - "8080:80"
     volumes:
       - ./frontend:/usr/share/nginx/html
-    networks:
-      - app-network
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - order-service
 
   # Order Service
   order-service:
@@ -17,30 +18,30 @@ services:
     ports:
       - "5001:5000"
     environment:
-      - RABBITMQ_HOST=rabbitmq
-      - DATABASE_URL=sqlite:///orders.db
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
-
+      - FLASK_ENV=development
+    volumes:
+      - ./order-service:/app  # Монтируем исходный код
+      - order-data:/data      # Том для данных
+    restart: unless-stopped
   # Payment Service
-  payment-service:
-    build: ./payment-service
-    environment:
-      - RABBITMQ_HOST=rabbitmq
+   frontend:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
     depends_on:
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - app-network
+      - order-service
+    restart: unless-stopped
 
   # Notification Service
   notification-service:
-    build: ./notification-service
+    build: 
+      context: ./notification-service
+      dockerfile: Dockerfile
     environment:
       - RABBITMQ_HOST=rabbitmq
+    command: python app.py
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -49,18 +50,22 @@ services:
 
   # RabbitMQ
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3-management-alpine
     ports:
       - "5672:5672"
       - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
-      interval: 5s
-      timeout: 10s
-      retries: 10
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
-
+volumes:
+  order-data:  # Том для хранения заказов
 networks:
   app-network:
     driver: bridge

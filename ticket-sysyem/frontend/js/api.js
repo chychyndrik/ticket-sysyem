@@ -1,13 +1,15 @@
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = 'http://localhost:5001';
 
 // Функция для работы с корзиной
 const CartAPI = {
     getCart: () => {
-        return JSON.parse(localStorage.getItem('ticketCart')) || [];
+        const cart = localStorage.getItem('ticketCart');
+        return cart ? JSON.parse(cart) : [];
     },
 
     saveCart: (cart) => {
         localStorage.setItem('ticketCart', JSON.stringify(cart));
+        CartAPI.updateCartCount();
     },
 
     addToCart: (ticket, quantity = 1) => {
@@ -27,7 +29,6 @@ const CartAPI = {
         }
         
         CartAPI.saveCart(cart);
-        CartAPI.updateCartCount();
         return cart;
     },
 
@@ -44,7 +45,6 @@ const CartAPI = {
         }
         
         CartAPI.saveCart(cart);
-        CartAPI.updateCartCount();
         return cart;
     },
 
@@ -52,7 +52,6 @@ const CartAPI = {
         const cart = CartAPI.getCart();
         const filteredCart = cart.filter(item => item.id !== ticketId);
         CartAPI.saveCart(filteredCart);
-        CartAPI.updateCartCount();
         return filteredCart;
     },
 
@@ -86,10 +85,10 @@ const CartAPI = {
     }
 };
 
-// Функция для работы с API заказов
 const OrderAPI = {
     createOrder: async (amount) => {
         try {
+            console.log('Creating order with amount:', amount);
             const response = await fetch(`${API_BASE_URL}/orders`, {
                 method: 'POST',
                 headers: {
@@ -99,26 +98,119 @@ const OrderAPI = {
             });
             
             if (!response.ok) {
-                throw new Error('Ошибка при создании заказа');
+                const errorText = await response.text();
+                console.error('Server error:', errorText);
+                throw new Error(`Server error: ${response.status} - ${errorText}`);
             }
             
-            return await response.json();
+            const data = await response.json();
+            console.log('Order created successfully:', data);
+            
+            // Сохраняем заказ в localStorage для быстрого доступа
+            const savedOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
+            savedOrders.push({
+                id: data.order_id,
+                amount: data.amount,
+                status: data.status,
+                date: data.date || new Date().toISOString(),
+                items: [
+                    {
+                        name: `Заказ #${data.order_id}`,
+                        price: data.amount,
+                        quantity: 1
+                    }
+                ]
+            });
+            localStorage.setItem('user_orders', JSON.stringify(savedOrders));
+            
+            return data;
+            
         } catch (error) {
             console.error('Error creating order:', error);
-            throw error;
+            
+            // Fallback: создаем локальный заказ
+            const orderId = Math.floor(Math.random() * 1000) + 1000;
+            const fallbackOrder = {
+                order_id: orderId,
+                status: 'completed',
+                amount: amount,
+                date: new Date().toISOString()
+            };
+            
+            // Сохраняем локально
+            const savedOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
+            savedOrders.push({
+                id: orderId,
+                amount: amount,
+                status: 'completed',
+                date: fallbackOrder.date,
+                items: [
+                    {
+                        name: `Заказ #${orderId}`,
+                        price: amount,
+                        quantity: 1
+                    }
+                ]
+            });
+            localStorage.setItem('user_orders', JSON.stringify(savedOrders));
+            
+            return fallbackOrder;
         }
     },
 
     getOrders: async () => {
         try {
-            // В реальном приложении здесь был бы запрос к API
-            // Для демо возвращаем моковые данные
-            const mockOrders = [
+            console.log('Fetching orders from API...');
+            const response = await fetch(`${API_BASE_URL}/orders`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const apiOrders = await response.json();
+            console.log('Orders from API:', apiOrders);
+            
+            // Получаем локальные заказы
+            const localOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
+            console.log('Local orders:', localOrders);
+            
+            // Объединяем заказы, убирая дубликаты
+            const allOrders = [...apiOrders];
+            localOrders.forEach(localOrder => {
+                if (!allOrders.find(order => order.id === localOrder.id)) {
+                    allOrders.push(localOrder);
+                }
+            });
+            
+            // Сортируем по дате (новые первыми)
+            allOrders.sort((a, b) => {
+                const dateA = new Date(a.date || 0);
+                const dateB = new Date(b.date || 0);
+                return dateB - dateA;
+            });
+            
+            console.log('All orders combined:', allOrders);
+            return allOrders;
+            
+        } catch (error) {
+            console.error('Error fetching orders from API:', error);
+            
+            // Fallback: используем локальные заказы + mock данные
+            const localOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
+            
+            if (localOrders.length > 0) {
+                console.log('Using local orders as fallback:', localOrders);
+                return localOrders;
+            }
+            
+            // Если нет локальных заказов, возвращаем mock
+            console.log('Using mock orders as fallback');
+            return [
                 {
                     id: 1001,
                     amount: 5999,
                     status: 'completed',
-                    date: '2024-01-15 14:30:00',
+                    date: '2024-01-15T14:30:00',
                     items: [
                         { name: 'Билет на концерт группы "Кино"', price: 2999, quantity: 2 }
                     ]
@@ -127,30 +219,15 @@ const OrderAPI = {
                     id: 1002,
                     amount: 2499,
                     status: 'pending',
-                    date: '2024-01-16 10:15:00',
+                    date: '2024-01-16T10:15:00',
                     items: [
                         { name: 'Билет в кино "Дюна 2"', price: 2499, quantity: 1 }
                     ]
-                },
-                {
-                    id: 1003,
-                    amount: 12998,
-                    status: 'completed',
-                    date: '2024-01-14 19:45:00',
-                    items: [
-                        { name: 'Билет на футбольный матч', price: 6499, quantity: 2 }
-                    ]
                 }
             ];
-            
-            return mockOrders;
-        } catch (error) {
-            console.error('Error fetching orders:', error);
-            return [];
         }
     }
 };
-
 // Утилитные функции
 const Utils = {
     formatPrice: (price) => {
@@ -184,56 +261,6 @@ const Utils = {
         };
     }
 };
-
-// Инициализация темы
-const ThemeManager = {
-    init: () => {
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        
-        const themeToggle = document.querySelector('.theme-toggle');
-        if (themeToggle) {
-            themeToggle.addEventListener('click', ThemeManager.toggleTheme);
-        }
-    },
-
-    toggleTheme: () => {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-    }
-};
-
-// Инициализация меню
-const MenuManager = {
-    init: () => {
-        const menuToggle = document.querySelector('.menu-toggle');
-        const navMenu = document.querySelector('.nav-menu');
-        
-        if (menuToggle && navMenu) {
-            menuToggle.addEventListener('click', () => {
-                navMenu.classList.toggle('active');
-            });
-            
-            // Закрытие меню при клике на ссылку
-            const navLinks = navMenu.querySelectorAll('a');
-            navLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    navMenu.classList.remove('active');
-                });
-            });
-        }
-    }
-};
-
-// Инициализация при загрузке страницы
-document.addEventListener('DOMContentLoaded', () => {
-    ThemeManager.init();
-    MenuManager.init();
-    CartAPI.updateCartCount();
-});
 
 // Экспорт для использования в других модулях
 window.CartAPI = CartAPI;

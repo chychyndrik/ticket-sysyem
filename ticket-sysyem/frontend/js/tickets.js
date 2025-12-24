@@ -1,10 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing tickets...');
     loadTickets();
     setupEventListeners();
     renderCart();
+    CartAPI.updateCartCount(); // Инициализируем счетчик корзины
 });
 
-// Моковые данные билетов
+// Моковые данные билетов (убедитесь, что они определены)
 const mockTickets = [
     {
         id: 1,
@@ -49,41 +51,26 @@ const mockTickets = [
         date: '2024-02-28 21:00',
         venue: 'Москва, Кинотеатр "Октябрь"',
         available: 200
-    },
-    {
-        id: 5,
-        name: 'Концерт "Рамштайн"',
-        price: 7999,
-        description: 'Немецкая индастриал-метал группа в России.',
-        category: 'concert',
-        image: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        date: '2024-04-15 20:00',
-        venue: 'Москва, Лужники',
-        available: 25
-    },
-    {
-        id: 6,
-        name: 'Балет "Лебединое озеро"',
-        price: 3499,
-        description: 'Классический балет в постановке Большого театра.',
-        category: 'theater',
-        image: 'https://images.unsplash.com/photo-1508349937151-22b68c77b9f8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        date: '2024-03-10 19:00',
-        venue: 'Москва, Большой театр',
-        available: 60
     }
 ];
 
 function loadTickets() {
     const container = document.getElementById('tickets-container');
-    if (!container) return;
+    if (!container) {
+        console.error('tickets-container not found!');
+        return;
+    }
 
+    console.log('Loading tickets...');
     container.innerHTML = '';
     
     mockTickets.forEach(ticket => {
         const ticketElement = createTicketCard(ticket);
         container.appendChild(ticketElement);
     });
+    
+    // Навешиваем обработчики событий после создания карточек
+    attachCartEventListeners();
 }
 
 function createTicketCard(ticket) {
@@ -91,7 +78,7 @@ function createTicketCard(ticket) {
     div.className = 'ticket-card';
     div.innerHTML = `
         <div class="ticket-image">
-            <img src="${ticket.image}" alt="${ticket.name}">
+            <img src="${ticket.image}" alt="${ticket.name}" loading="lazy">
         </div>
         <div class="ticket-content">
             <span class="ticket-category">${getCategoryLabel(ticket.category)}</span>
@@ -106,11 +93,11 @@ function createTicketCard(ticket) {
                 <div class="ticket-price">${Utils.formatPrice(ticket.price)}</div>
                 <div class="ticket-actions">
                     <div class="ticket-quantity" data-id="${ticket.id}">
-                        <button class="quantity-btn minus" data-action="decrease">-</button>
+                        <button class="quantity-btn minus" type="button" data-action="decrease">-</button>
                         <input type="number" class="quantity-input" value="1" min="1" max="${ticket.available}">
-                        <button class="quantity-btn plus" data-action="increase">+</button>
+                        <button class="quantity-btn plus" type="button" data-action="increase">+</button>
                     </div>
-                    <button class="btn btn-primary add-to-cart" data-id="${ticket.id}">
+                    <button class="btn btn-primary add-to-cart" data-id="${ticket.id}" type="button">
                         <i class="fas fa-cart-plus"></i> В корзину
                     </button>
                 </div>
@@ -122,6 +109,8 @@ function createTicketCard(ticket) {
 }
 
 function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    
     // Поиск билетов
     const searchInput = document.getElementById('search-tickets');
     if (searchInput) {
@@ -138,7 +127,12 @@ function setupEventListeners() {
     const checkoutBtn = document.getElementById('checkout-btn');
     if (checkoutBtn) {
         checkoutBtn.addEventListener('click', () => {
-            window.location.href = 'payment.html';
+            const cartCount = CartAPI.getCartCount();
+            if (cartCount > 0) {
+                window.location.href = 'payment.html';
+            } else {
+                alert('Корзина пуста. Добавьте билеты для оплаты.');
+            }
         });
     }
 }
@@ -168,7 +162,6 @@ function searchTickets() {
         container.appendChild(ticketElement);
     });
     
-    // Повторно навешиваем обработчики событий
     attachCartEventListeners();
 }
 
@@ -177,23 +170,34 @@ function filterTicketsByCategory() {
 }
 
 function attachCartEventListeners() {
+    console.log('Attaching cart event listeners...');
+    
     // Кнопки добавления в корзину
     document.querySelectorAll('.add-to-cart').forEach(button => {
         button.addEventListener('click', (e) => {
-            const ticketId = parseInt(e.target.dataset.id || e.target.closest('.add-to-cart').dataset.id);
+            const ticketId = parseInt(e.target.closest('.add-to-cart').dataset.id);
             const ticket = mockTickets.find(t => t.id === ticketId);
             const quantityInput = document.querySelector(`.ticket-quantity[data-id="${ticketId}"] .quantity-input`);
             const quantity = parseInt(quantityInput.value);
+            
+            if (!ticket) {
+                console.error('Ticket not found:', ticketId);
+                return;
+            }
             
             CartAPI.addToCart(ticket, quantity);
             renderCart();
             
             // Анимация добавления
+            const originalHTML = button.innerHTML;
             button.innerHTML = '<i class="fas fa-check"></i> Добавлено';
             button.classList.add('btn-success');
+            button.disabled = true;
+            
             setTimeout(() => {
-                button.innerHTML = '<i class="fas fa-cart-plus"></i> В корзину';
+                button.innerHTML = originalHTML;
                 button.classList.remove('btn-success');
+                button.disabled = false;
             }, 1000);
         });
     });
@@ -223,9 +227,13 @@ function renderCart() {
     const cartTotalElement = document.getElementById('cart-total');
     const cartCountElement = document.getElementById('cart-count');
     
-    if (!cartItemsContainer) return;
+    if (!cartItemsContainer) {
+        console.error('cart-items element not found!');
+        return;
+    }
     
     const cart = CartAPI.getCart();
+    console.log('Rendering cart:', cart);
     
     if (cart.length === 0) {
         cartItemsContainer.innerHTML = '<p class="empty-cart">Корзина пуста</p>';
@@ -249,7 +257,7 @@ function renderCart() {
             </div>
             <div>
                 <strong>${Utils.formatPrice(item.price * item.quantity)}</strong>
-                <button class="btn-remove" data-id="${item.id}">
+                <button class="btn-remove" data-id="${item.id}" type="button">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -273,6 +281,12 @@ function renderCart() {
             renderCart();
         });
     });
+    
+    // Обновляем состояние кнопки оплаты
+    const checkoutBtn = document.getElementById('checkout-btn');
+    if (checkoutBtn) {
+        checkoutBtn.disabled = cart.length === 0;
+    }
 }
 
 function getCategoryLabel(category) {
@@ -297,7 +311,7 @@ function formatDate(dateString) {
     });
 }
 
-// Инициализация обработчиков событий для корзины
+// Вызываем обновление корзины после загрузки страницы
 setTimeout(() => {
-    attachCartEventListeners();
+    renderCart();
 }, 100);
